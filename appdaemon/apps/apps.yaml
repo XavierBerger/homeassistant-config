@@ -1,4 +1,15 @@
 ---
+shopping_list:
+  module: shopping_list
+  class: ShoppingList
+  log: shopping_list_log
+  shops: input_select.shops
+  notification_url: "/shopping-list-extended/"
+  notification_title: "Liste de course"
+  notification_message: "Afficher la liste de courses "
+  persons:
+    - name: Xavier
+      id: person.xavier_berger
 notifier:
   module: notifier
   class: Notifier
