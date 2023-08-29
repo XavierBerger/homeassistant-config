@@ -1,0 +1,12 @@
+---
+notifier:
+  module: notifier
+  class: Notifier
+  log: notifier_log
+  home_occupancy_sensor_id: binary_sensor.home_occupied
+  proximity_threshold: 500
+  persons:
+    - name: Xavier
+      id: person.xavier_berger
+      notification_service: notify/mobile_app_sm_a405fn
+      proximity_id: proximity.distance_xav_home
