@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "mhutchie.git-graph",
+        "ms-vscode.live-server",
+        "ms-python.pylint",
+        "ms-python.python"
+    ]
+}
