@@ -1,4 +1,11 @@
 ---
+garage_door:
+  module: garage_door
+  class: GarageDoor
+  log: garage_door_log
+  sun: sun.sun
+  notification_delay: 600
+  door_state: binary_sensor.porte_garage_opening
 shopping_list:
   module: shopping_list
   class: ShoppingList
