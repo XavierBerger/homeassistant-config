@@ -4,20 +4,23 @@ This repository is gathering the part of home assistant configuration and appdae
 
 ## Appdaemon applications
 
-<<<<<<< Updated upstream
 ### Multiple shopping list manager
 
 [Shopping list](https://www.home-assistant.io/integrations/shopping_list/) integration is only able to mange one shopping list. This application add teh capability the manage multiple shopping lists. Shopping list can be selected and updated indpendently and notification can be send when entering in a shop zone. One list can be associated to multiple zone.
 
 Read the comment on the to of the script to see how to install and configure it. 
 
-=======
 ### Garage Door
 
-This application is designed to raise and alarm is the garage dor remain open when the night is coming or if door has been open by night and not closed within 15 minutes.
+This application is designed to raise and alarm is the garage door remain open when the night is coming or if door has been open by night and not closed within 15 minutes.
 
 This automation required a sensor telling the open state of the door. In my case, I use a ZigBee sensor.
->>>>>>> Stashed changes
+
+### Automower
+
+This application is designed to perform and advanced management of a Husqvarna Automower.  
+My weather station is able to detect rain. When rain occurs, this automation will ask automower to park. When rain as stop and lawn can be considered as dry, the application sends the order to restart mowing.
+Thsi application is also managing the end of mowing session to ensure that session will not end into the next hour
 
 ### Notifier
 

@@ -6,6 +6,10 @@ garage_door:
   sun: sun.sun
   notification_delay: 600
   door_state: binary_sensor.porte_garage_opening
+automower:
+  module: automower
+  class: Automower
+  log: automower_log
 shopping_list:
   module: shopping_list
   class: ShoppingList
