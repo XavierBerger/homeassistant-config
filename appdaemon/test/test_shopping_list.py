@@ -39,6 +39,7 @@ from .appdaemon_testing.pytest import (  # pylint: disable=W0611
             {"name": "user1", "id": "person.user1"},
             {"name": "user2", "id": "person.user2"},
         ],
+        "tempo": 0.5,
     },
 )
 def shopping_list() -> ShoppingList:

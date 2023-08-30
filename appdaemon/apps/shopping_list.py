@@ -45,23 +45,26 @@ import appdaemon.plugins.hass.hassapi as hass
 #      Zone "zone.Biocoop_Grenoble" and "zone.Biocoop_Modane" will both use the shoppinglist named "Biocoop"
 #
 # Configure an AppDeamon application with:
-#   module: shopping_list
-#   class : ShoppingList
-#   and args define like this:
-#       shops: input_select gathering the shops to manage (Mandatory)
-#       notificationurl: url of shoppong list's lovelace card used in notification
-#       notification_title: title display in notification prefixed by "shop name :""
-#       notification_message: message to display in notification
-#       persons: List of person to notify when they enter into shop zone. At least one person has to be defined.
-#           - name: username as defined in notifier application (used for notification)
-#             id: a user as defined in notifier application (used for zone tracking)
+#   shopping_list:
+#     module: shopping_list
+#     class : ShoppingList
+#     shops: input_select gathering the shops to manage
+#     tempo: delay ins seconds between list population and item complete update (recommended: 0.1)
+#            if complete item are not set corectly, increase this value
+#     notificationurl: url of shopping list's lovelace card used in notification
+#     notification_title: title display in notification. This text will be prefixed by the zone name.
+#     notification_message: message to display in notification
+#     persons: List of person to notify when they enter into shop zone. At least one person has to be defined.
+#         - name: username as defined in notifier application (used for notification)
+#           id: a user as defined in notifier application (used for zone tracking)
 #
 #   Appdaemon configuration example:
 #     shopping_list:
 #       module: shopping_list
 #       class: ShoppingList
 #       log: shopping_list_log
-#       shops: input_select.shops
+#       shops: input_select.shoppinglist
+#       tempo: 0.1
 #       notification_url: "/shopping-list-extended/"
 #       notification_title: "Shopping list"
 #       notification_message: "Show shopping list"
@@ -168,10 +171,12 @@ class ShoppingList(hass.Hass):
                 self.call_service("shopping_list/add_item", name=item["name"])
             # Note: Complete is set in a second loop and after a tempo because I notice that sometime the list was not
             #       recreated correctly maybe because of too fast service calls
-            time.sleep(0.5)  # sleep should be avoided in appdaemon application but it mandatory to make update works
+            #       /!\ sleep should be avoided in appdaemon application but it mandatory to make update works
+            #       I prefer not using 'run_in' to have have to open the file a second time
+            time.sleep(self.args["tempo"])
             for item in data:
                 if item["complete"]:
-                    # Set completion from backup (after a little tempo to be sure that item is added)
+                    # Set completion from backup
                     self.call_service("shopping_list/complete_item", name=item["name"])
                 else:
                     has_incomplete = True
