@@ -176,8 +176,8 @@ class GarageDoor(hass.Hass):
         self.fire_event(
             "NOTIFIER",
             action="send_to_present",
-            title="Porte du garage",
-            message="Il fait nuit et la porte du garage est toujours ouverte",
+            title=self.args["notification_title"],
+            message=self.args["notification_message"],
             icon="mdi-garage-open",
             color="deep-orange",
             tag="garage_open",

@@ -29,7 +29,13 @@ from .appdaemon_testing.pytest import (  # pylint: disable=W0611
 
 @automation_fixture(
     GarageDoor,
-    args={"sun": "sun.sun", "notification_delay": 600, "door_state": "binary_sensor.porte_garage_opening"},
+    args={
+        "sun": "sun.sun",
+        "notification_delay": 600,
+        "door_state": "binary_sensor.porte_garage_opening",
+        "notification_title": "Porte du garage",
+        "notification_message": "Il fait nuit et la porte du garage est toujours ouverte",
+    },
     initialize=False,
 )
 def garage_door() -> GarageDoor:

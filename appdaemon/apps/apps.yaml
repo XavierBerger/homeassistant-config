@@ -6,6 +6,8 @@ garage_door:
   sun: sun.sun
   notification_delay: 600
   door_state: binary_sensor.porte_garage_opening
+  notification_title: "Porte du garage"
+  notification_message: "Il fait nuit et la porte du garage est toujours ouverte"
 automower:
   module: automower
   class: Automower
