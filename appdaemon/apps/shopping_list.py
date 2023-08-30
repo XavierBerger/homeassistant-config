@@ -44,6 +44,9 @@ import appdaemon.plugins.hass.hassapi as hass
 #    Example:
 #      Zone "zone.Biocoop_Grenoble" and "zone.Biocoop_Modane" will both use the shoppinglist named "Biocoop"
 #
+# Notifier is a dependency
+#   Refer to notifier.py documentation activate notification
+#
 # Configure an AppDeamon application with:
 #   shopping_list:
 #     module: shopping_list
