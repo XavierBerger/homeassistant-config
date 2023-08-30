@@ -108,12 +108,13 @@ class ShoppingList(hass.Hass):
         self.listen_state(self.callback_active_shop_changed, self.args["shops"])
         self.listen_event(self.callback_shopping_list_changed, "shopping_list_updated")
 
-        for person in self.args["persons"]:
-            self.listen_state(
-                self.callback_zone_changed,
-                person["id"],
-                name=person["name"],
-            )
+        if "persons" in self.args:
+            for person in self.args["persons"]:
+                self.listen_state(
+                    self.callback_zone_changed,
+                    person["id"],
+                    name=person["name"],
+                )
 
         # Note: cancel_listen_event has no effect when executed within callback_active_shop_changed
         #       A workaround to avoid burst call to callback_shopping_list_changed is to manage

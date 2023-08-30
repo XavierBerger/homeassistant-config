@@ -41,6 +41,7 @@ from .appdaemon_testing.pytest import (  # pylint: disable=W0611
         ],
         "tempo": 0.5,
     },
+    initialize=False,
 )
 def shopping_list() -> ShoppingList:
     pass
@@ -84,7 +85,8 @@ def mock_open_files():
 @pytest.mark.shopping_list
 class TestShoppingList:
     # pylint: disable=W0621
-    def test_initialization(self, hass_driver, shopping_list: ShoppingList):
+    @pytest.mark.parametrize("with_user", [True, False])
+    def test_initialization(self, hass_driver, shopping_list: ShoppingList, with_user):
         """
         Test case for initializing the shopping list manager application.
 
@@ -100,19 +102,25 @@ class TestShoppingList:
         """
         # GIVEN
         #   Application is starting
+        if not with_user:
+            del shopping_list.args["persons"]
+        shopping_list.initialize()
 
         # WHEN
         #   Application is initialized
         # THEN
         listen_state = hass_driver.get_mock("listen_state")
-        assert listen_state.call_count == 3
-        listen_state.assert_has_calls(
-            [
-                mock.call(shopping_list.callback_active_shop_changed, "input_select.shops"),
-                mock.call(shopping_list.callback_zone_changed, "person.user1", name="user1"),
-                mock.call(shopping_list.callback_zone_changed, "person.user2", name="user2"),
-            ],
-        )
+        if with_user:
+            assert listen_state.call_count == 3
+            listen_state.assert_has_calls(
+                [
+                    mock.call(shopping_list.callback_active_shop_changed, "input_select.shops"),
+                    mock.call(shopping_list.callback_zone_changed, "person.user1", name="user1"),
+                    mock.call(shopping_list.callback_zone_changed, "person.user2", name="user2"),
+                ],
+            )
+        else:
+            listen_state.assert_called_once_with(shopping_list.callback_active_shop_changed, "input_select.shops")
 
         listen_event = hass_driver.get_mock("listen_event")
         assert listen_event.call_count == 1
@@ -145,6 +153,8 @@ class TestShoppingList:
         Returns:
             None
         """
+        shopping_list.initialize()
+
         hass_driver.set_state("input_select.shops", shop)
         hass_driver.set_state("input_select.shops", "do_not_trigger_twice")
 
@@ -202,6 +212,8 @@ class TestShoppingList:
         Returns:
             None
         """
+        shopping_list.initialize()
+
         hass_driver.set_state("input_select.shops", ["shop1", "shop2"], attribute_name="options")
         hass_driver.set_state(f"zone.{zone}", zone)
         hass_driver.set_state(f"zone.{zone}", zone, attribute_name="friendly_name")
@@ -308,6 +320,8 @@ class TestShoppingList:
         Returns:
             None
         """
+        shopping_list.initialize()
+
         with mock.patch("shutil.copyfile", autospec=True, create=True) as mock_copyfile:
             hass_driver.set_state("input_select.shops", shop)
 
