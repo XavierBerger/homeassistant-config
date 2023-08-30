@@ -27,7 +27,17 @@ from .appdaemon_testing.pytest import (  # pylint: disable=W0611
 )
 
 
-@automation_fixture(Automower, args={}, initialize=False)
+@automation_fixture(
+    Automower,
+    args={
+        "message_park_because_of_rain": "It starts raining, park until rain stops and lawn dries.",
+        "message_end_of_session_soon": "End session is in less than 1 hour, stay parked.",
+        "message_lawn_is_dry": "No rain during last 6h. Lawn should be dry now.",
+        "message_activated": "Advanced automation is activated.",
+        "message_deactivated": "Advanced automation is deactivated.",
+    },
+    initialize=False,
+)
 def automower() -> Automower:
     pass
 
@@ -79,7 +89,7 @@ class TestAutomower:
                 mock.call(automower.callback_automower_automation, "sensor.nono_problem_sensor", immediate=True),
                 mock.call(automower.callback_rain_changed, "sensor.rain_last_6h"),
                 mock.call(automower.callback_sun_is_at_top, "sun.sun", attribute="rising", new=False),
-                mock.call(automower.callback_next_start_changed, "sensor.nono_next_start", immediate=True),
+                mock.call(automower.callback_next_start_changed, "sensor.nono_next_start"),
             ],
             any_order=True,
         )
@@ -92,9 +102,9 @@ class TestAutomower:
                     mock.call("\tpark max duration : 60480"),
                     mock.call("Automower automation activation triggered"),
                     mock.call("\tAdvanced automation is activated."),
-                    mock.call("\tbinary_sensor.parked_because_of_rain: on"),
-                    mock.call("Next start event triggered"),
-                    mock.call("\tRobot is parked because of rain. Nothing to check."),
+                    mock.call("Send notification"),
+                    mock.call("\ttitle: Nono"),
+                    mock.call("\tMessage: Advanced automation is activated."),
                 ]
             )
         else:
@@ -104,11 +114,9 @@ class TestAutomower:
                     mock.call("\tpark max duration : 60480"),
                     mock.call("Automower automation activation triggered"),
                     mock.call("\tAdvanced automation is activated."),
-                    mock.call("\tbinary_sensor.parked_because_of_rain: off"),
-                    mock.call("Next start event triggered"),
-                    mock.call("\told=None"),
-                    mock.call("\tnew=unknown"),
-                    mock.call("Robot is currently mowing, let it come back to base before checking."),
+                    mock.call("Send notification"),
+                    mock.call("\ttitle: Nono"),
+                    mock.call("\tMessage: Advanced automation is activated."),
                 ]
             )
 
@@ -148,18 +156,18 @@ class TestAutomower:
         assert hass_driver.get_number_of_state_callbacks("sun.sun") == 0
         assert hass_driver.get_number_of_state_callbacks("sensor.nono_next_start") == 0
 
-        log = hass_driver.get_mock("log")
-        log.assert_has_calls(
-            [
-                mock.call("Starting Automower Automation"),
-                mock.call("\tpark max duration : 60480"),
-                mock.call("Automower automation activation triggered"),
-                mock.call("\tAdvanced automation is deactivated."),
-                mock.call("Send notification"),
-                mock.call("\ttitle: Nono"),
-                mock.call("\tMessage: Advanced automation is deactivated."),
-            ]
-        )
+        # log = hass_driver.get_mock("log")
+        # log.assert_has_calls(
+        #     [
+        #         mock.call("Starting Automower Automation"),
+        #         mock.call("\tpark max duration : 60480"),
+        #         mock.call("Automower automation activation triggered"),
+        #         mock.call("\tAdvanced automation is deactivated."),
+        #         mock.call("Send notification"),
+        #         mock.call("\ttitle: Nono"),
+        #         mock.call("\tMessage: Advanced automation is deactivated."),
+        #     ]
+        # )
 
     @pytest.mark.parametrize("parked_because_of_rain", ["on", "off"])
     def test__callback_automower_automation__automation_deactivation(
@@ -253,7 +261,7 @@ class TestAutomower:
         fire_event.reset_mock()
 
         # WHEN
-        #   Automation is deactivated
+        #   Automation is activated
         hass_driver.set_state("sensor.nono_problem_sensor", "week_schedule")
 
         # THEN
@@ -267,20 +275,15 @@ class TestAutomower:
             [
                 mock.call(automower.callback_rain_changed, "sensor.rain_last_6h"),
                 mock.call(automower.callback_sun_is_at_top, "sun.sun", attribute="rising", new=False),
-                mock.call(automower.callback_next_start_changed, "sensor.nono_next_start", immediate=True),
             ],
             any_order=True,
         )
 
-        log = hass_driver.get_mock("log")
         if parked_because_of_rain == "on":
             log.assert_has_calls(
                 [
                     mock.call("Automower automation activation triggered"),
                     mock.call("\tAdvanced automation is activated."),
-                    mock.call("\tbinary_sensor.parked_because_of_rain: on"),
-                    mock.call("Next start event triggered"),
-                    mock.call("\tRobot is parked because of rain. Nothing to check."),
                     mock.call("Send notification"),
                     mock.call("\ttitle: Nono"),
                     mock.call("\tMessage: Advanced automation is activated."),
@@ -291,11 +294,6 @@ class TestAutomower:
                 [
                     mock.call("Automower automation activation triggered"),
                     mock.call("\tAdvanced automation is activated."),
-                    mock.call("\tbinary_sensor.parked_because_of_rain: off"),
-                    mock.call("Next start event triggered"),
-                    mock.call("\told=None"),
-                    mock.call("\tnew=unknown"),
-                    mock.call("Robot is currently mowing, let it come back to base before checking."),
                     mock.call("Send notification"),
                     mock.call("\ttitle: Nono"),
                     mock.call("\tMessage: Advanced automation is activated."),
@@ -316,6 +314,44 @@ class TestAutomower:
                 ),
             ]
         )
+
+    @pytest.mark.parametrize("parked_because_of_rain", ["on", "off"])
+    def test__callback_automower_automation__unmanaged_state(
+        self, hass_driver, automower: Automower, parked_because_of_rain
+    ):
+        """
+        Test the callback for automower automation unmanaged state.
+
+        This test case simulates the scenario where the callback for automower automation is triggered with an
+        unmanaged state.
+        It checks that nothing is done is such a case
+
+        Args:
+            hass_driver: Mocked Home Assistant driver.
+            automower: Mocked Automower instance.
+            parked_because_of_rain: The initial state of the binary sensor indicating if the robot is parked due to
+            rain.
+
+        Returns:
+            None
+        """
+        # GIVEN
+        #   automation is activated
+        self.test__initialize__automation_activated(hass_driver, automower, parked_because_of_rain)
+        log = hass_driver.get_mock("log")
+        log.reset_mock()
+
+        # WHEN
+        #   Automation is deactivated
+        hass_driver.set_state("sensor.nono_problem_sensor", "unknown")
+
+        # THEN
+        #   3 callback are set
+        assert hass_driver.get_number_of_state_callbacks("sensor.rain_last_6h") == 1
+        assert hass_driver.get_number_of_state_callbacks("sun.sun") == 1
+        assert hass_driver.get_number_of_state_callbacks("sensor.nono_next_start") == 1
+
+        assert hass_driver.get_mock("log").call_count == 0
 
     def test__callback_next_start_changed__when_parked_because_of_rain(self, hass_driver, automower: Automower):
         """

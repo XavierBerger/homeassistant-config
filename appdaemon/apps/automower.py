@@ -24,7 +24,11 @@ import appdaemon.plugins.hass.hassapi as hass
 # Automower App
 #
 # Args:
-#
+#  message_park_because_of_rain: "It starts raining, park until rain stops and lawn dries."
+#  message_end_of_session_soon: "End session is in less than 1 hour, stay parked."
+#  message_lawn_is_dry: "No rain during last 6h. Lawn should be dry now."
+#  message_activated: "Advanced automation is activated."
+#  message_deactivated: "Advanced automation is deactivated."
 
 #
 # End session management:
@@ -57,9 +61,11 @@ class Automower(hass.Hass):
         # Handles to register / unregister callbacks
         self.state_handles = []
 
+        # Max duration time is used to park automover when it's raining (max = 42 days)
         self.park_max_duration = self.get_state("number.nono_park_for", attribute="max")
         self.log(f"\tpark max duration : {self.park_max_duration}")
 
+        # This sensor is not only give problem but also tell sheddule or if park until further notice has been activated
         self.listen_state(self.callback_automower_automation, "sensor.nono_problem_sensor", immediate=True)
 
     def log_parked_because_of_rain(self):
@@ -149,7 +155,7 @@ class Automower(hass.Hass):
             None
         """
         self.service(
-            message="No rain during last 6h. Lawn should be dry now.",
+            message=self.args["message_lawn_is_dry"],
             command="vacuum/start",
             entity_id="vacuum.nono",
         )
@@ -168,19 +174,13 @@ class Automower(hass.Hass):
         Returns:
             None
         """
-        self.log("Automower automation activation triggered")
-        prefix = "de" if new == "parked_until_further_notice" else ""
-        message = f"Advanced automation is {prefix}activated."
-        self.log(f"\t{message}")
-
         if new == "parked_until_further_notice":
             # Deregister callbacks
             while len(self.state_handles) >= 1:
                 handle = self.state_handles.pop()
                 self.cancel_listen_state(handle)
+            message = self.args["message_deactivated"]
         elif new == "week_schedule":
-            self.log_parked_because_of_rain()
-
             # register callbacks
             # Listen for rain sensors
             self.state_handles.append(self.listen_state(self.callback_rain_changed, "sensor.rain_last_6h"))
@@ -191,9 +191,14 @@ class Automower(hass.Hass):
             )
 
             # Listen next start
-            self.state_handles.append(
-                self.listen_state(self.callback_next_start_changed, "sensor.nono_next_start", immediate=True)
-            )
+            self.state_handles.append(self.listen_state(self.callback_next_start_changed, "sensor.nono_next_start"))
+            message = self.args["message_activated"]
+        else:
+            # Robot is mowing or having an error
+            return
+
+        self.log("Automower automation activation triggered")
+        self.log(f"\t{message}")
         self.send_notification(title="Nono", message=message)
 
     def callback_rain_changed(self, entity, attribute, old, new, kwargs):
@@ -232,7 +237,7 @@ class Automower(hass.Hass):
             # Rain is starting
             self.set_state("binary_sensor.parked_because_of_rain", state="on")
             self.force_park(
-                message="It starts raining, park until rain stops and lawn dries.",
+                message=self.args["message_park_because_of_rain"],
                 duration=60480,
             )
         elif new_value == 0.0:
@@ -316,7 +321,7 @@ class Automower(hass.Hass):
         elif delta < 1:
             self.log("\tDuration between next start and end of session is less than 1 hour, stay parked.")
             self.force_park(
-                message="End session is in less than 1 hour, stay parked.",
+                message=self.args["message_end_of_session_soon"],
                 duration=180,
             )
         else:  # delta >= 1

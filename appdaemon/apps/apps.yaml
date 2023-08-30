@@ -12,6 +12,11 @@ automower:
   module: automower
   class: Automower
   log: automower_log
+  message_park_because_of_rain: "It starts raining, park until rain stops and lawn dries."
+  message_end_of_session_soon: "End session is in less than 1 hour, stay parked."
+  message_lawn_is_dry: "No rain during last 6h. Lawn should be dry now."
+  message_activated: "Advanced automation is activated."
+  message_deactivated: "Advanced automation is deactivated."
 shopping_list:
   module: shopping_list
   class: ShoppingList
