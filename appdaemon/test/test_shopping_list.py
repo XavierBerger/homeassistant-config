@@ -259,12 +259,13 @@ class TestShoppingList:
                 mock.call(
                     "NOTIFIER",
                     action=f"send_to_{user}",
-                    title=f"{zone}: Liste de course",
+                    title=f"{shop}: Liste de course",
                     message="Afficher la liste de courses ",
                     icon="mdi-cart",
                     color="deep-orange",
                     tag="shoppinglist",
                     click_url="/shopping-list-extended/",
+                    until=[{"entity_id": f"person.{user}", "old_state": f"{zone}"}],
                 ),
             ]
         )
@@ -272,34 +273,12 @@ class TestShoppingList:
         log.assert_has_calls(
             [
                 mock.call(f"Zone changed to {zone} for person.{user}"),
-                mock.call(f"Entering zone: {zone}"),
                 mock.call(f"{shop} > loading shopping list"),
                 mock.call(f"Active shop has changed to {shop}"),
                 mock.call(f"{shop} > shopping list loaded."),
                 mock.call(f"{shop} > input_select updated."),
                 mock.call("Send notification"),
                 mock.call("Shopping list updated"),
-            ]
-        )
-
-        log.reset_mock()
-        fire_event.reset_mock()
-
-        hass_driver.set_state(f"person.{user}", "home")
-
-        fire_event.assert_has_calls(
-            [
-                mock.call(
-                    "NOTIFIER_DISCARD",
-                    tag="shoppinglist",
-                ),
-            ]
-        )
-
-        log.assert_has_calls(
-            [
-                mock.call(f"Zone changed to home for person.{user}"),
-                mock.call(f"Leaving zone: {zone}"),
             ]
         )
 

@@ -237,20 +237,12 @@ class ShoppingList(hass.Hass):
             None
         """
         self.log(f"Zone changed to {new} for {entity}")
-        if self.get_state(f"zone.{old}") is not None:
-            # Leaving zone
-            old_zone = self.get_state(f"zone.{old}", attribute="friendly_name")
-            self.log(f"Leaving zone: {old_zone}")
 
-            # Cancel notification
-            self.fire_event("NOTIFIER_DISCARD", tag="shoppinglist")
-
-        if self.get_state(f"zone.{new}") is not None:
-            # Entering zone
-            new_zone = self.get_state(f"zone.{new}", attribute="friendly_name")
-            self.log(f"Entering zone: {new_zone}")
+        if self.get_state(f"zone.{new.lower()}") is not None:
+            # Entering in a shop
+            shop_zone = self.get_state(f"zone.{new.lower()}", attribute="friendly_name")
             for shop in self.get_state(self.args["shops"], attribute="options"):
-                if new_zone.startswith(shop):
+                if shop_zone.startswith(shop):
                     self.log(f"{shop} > loading shopping list")
                     has_incomplete = self.activate_shop(shop)
                     self.log(f"{shop} > shopping list loaded.")
@@ -262,10 +254,13 @@ class ShoppingList(hass.Hass):
                         self.fire_event(
                             "NOTIFIER",
                             action=f"send_to_{kwargs['name']}",
-                            title=f"{new_zone}: {self.args['notification_title']}",
+                            title=f"{shop}: {self.args['notification_title']}",
                             message=self.args["notification_message"],
                             icon="mdi-cart",
                             color="deep-orange",
                             tag="shoppinglist",
                             click_url=self.args["notification_url"],
+                            until=[
+                                {"entity_id": entity, "old_state": shop_zone},
+                            ],
                         )
