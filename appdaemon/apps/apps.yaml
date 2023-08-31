@@ -20,7 +20,7 @@ automower:
 shopping_list:
   module: shopping_list
   class: ShoppingList
-  log: shopping_list_log
+  log: shopping_list.log
   shops: input_select.shops
   tempo: 0.1
   notification_url: "/shopping-list-extended/"
