@@ -1,19 +1,16 @@
+import math
+
 import appdaemon.plugins.hass.hassapi as hass
 
 """
 Source : https://github.com/jlpouffier/home-assistant-config/blob/master/appdaemon/apps/notifier.py
-
-
-Notify is an app responsible for notifying the right occupant(s) at the right time, and making sure to discard 
-notifications once they are not relevant anymore.
-
+ 
+Notify is an app responsible for notifying the right occupant(s) at the right time, and making sure to discard notifications once they are not relevant anymore.
+ 
 Here is the list of parameter that you NEED to set in order to run the app:
 
 home_occupancy_sensor_id: the id of a binary sensor that will be true if someone is at home, and false otherwise
-proximity_threshold: A thresold in meter, bellow this threshold the app will concider the person at home. 
-This is to avoid pinging only the first one that reaches Home if both occupant are on the same car for example 
-(Both will be pinged)
-
+proximity_threshold: A thresold in meter, bellow this threshold the app will concider the person at home. This is to avoid pinging only the first one that reaches Home if both occupant are on the same car for example (Both will be pinged)
 persons: A list of person, including
     name: their name
     id: the id of the person entity in home assistant
@@ -46,6 +43,8 @@ message: <string>
 callback:
  - title: <string>
    event: <string>
+   destructive: <boolean>
+   icon: <string>
  - title: <string>
    event: <string>
 timeout: <number>
@@ -55,6 +54,7 @@ icon: <string>
 color: <string>
 tag: <string>
 persistent: <boolean>
+interuption_level: <string>
 until:
  - entity_id: <string>
    new_state: <string>
@@ -72,45 +72,44 @@ action can be the following:
 - send_when_present:
    - if the home is occupied: Send a notification directly to all present occupant of the home
    - if the home is empty: Stage the notification and send it once the home becomes occupied
-
+ 
 *title: Title of the notification
-
+ 
 *message: Body of the notification
-
+ 
 callback: Actionable buttons of the notification
    - title: Title of the button
    - event: a string that will be used the catch back the event when the button is pressed.
-     If event: turn_off_lights, then an event "mobile_app_notification_action" with action = "turn_off_lights" 
-     will be triggered once the button is pressed.
+     If event: turn_off_lights, then an event "mobile_app_notification_action" with action = "turn_off_lights" will be triggered once the button is pressed.
      Up to the app / automation creating the notification to listen to this event and perform some action.
-
-timeout: Timeout of the notification in seconds. timeout: 60 will display the notification for one minute, 
-then discard it automatically.
-
+   - destructive: {iOS Only} Set it to true to color the action's title red, indicating a destructive action.
+   - icon: {iOS Only} The icon to use for the callback.	
+ 
+timeout: Timeout of the notification in seconds. timeout: 60 will display the notification for one minute, then discard it automatically.
+ 
 image_url: url of an image that will be embedded on the notification. Useful for cameras, vacuum maps, etc.
-
+ 
 click_url: url of the target location if the notification is pressed.
-If you have a lovelace view called "/lovelace/vacuums" for your vacuum, then putting click_url: "/lovelace/vacuums" 
-will lead to this view if the notification is clicked
-
+If you have a lovelace view called "/lovelace/vacuums" for your vacuum, then putting click_url: "/lovelace/vacuums" will lead to this view if the notification is clicked
+ 
 icon: Icon of the notification. format mdi:<string>. Visit https://materialdesignicons.com/ for supported icons
-
+ 
 color: color of the notification.
 Format can be "red" or "#ff6e07"
-
+ 
 tag: The concept of tag is complex to understand. So I'll explain the behavior you will experience while using tags.
   - A subsequent notification with a tag will replace an old notification with the same tag.
-    For example if you want to notify that a vacuum is starting, and then finishing: use the same tag for both 
-    (like "vacuum") and the "Cleaning complete" notification will replace the "Cleaning started" notification, 
-    as it is not relevant anymore.
+    For example if you want to notify that a vacuum is starting, and then finishing: use the same tag for both (like "vacuum") and the "Cleaning complete" notification will replace the "Cleaning started" notification, as it is not relevant anymore.
   - If you notify more than one person with the same tag:
     - Acting on the notification (a button) on a device will discard it on every other devices
-      Example: If you notify all occupants that the lights are still on while the home is empty with an actionable 
-      button to turn off the lights, if person A clicks on "Turn off lights" then person B will see the notification 
-      disappear... Because it's not relevant anymore (it's done)
+      Example: If you notify all occupants that the lights are still on while the home is empty with an actionable button to turn off the lights, if person A clicks on "Turn off lights" then person B will see the notification disappear... Because it's not relevant anymore (it's done)
   - The next field "until" requires the field tag to work too (See below)
 
 persistent: Notify the front-end of Home Assistant (with the service "notify/persistent_notification")
+
+interuption_level: {iOS Only} interruption level of a notification (passive/active/time-sensitive/critical)
+
+siri_shortcut_name: {iOS Only} Name of the shortcut to run when clicking on the notification
 
 until (note: "tag" is required for "until" to work)
 until dynamically creates watcher(s) to clear notification.
@@ -123,6 +122,7 @@ until:
    new_state : off
 This will make the notification(s) disappear as soon as the lights are off, or the home becomes occupied.
 That way, you make sure notifications are only displayed when relevant.
+ 
 """
 
 
@@ -135,12 +135,7 @@ class Notifier(hass.Hass):
 
         # Staged notification
         self.staged_notifications = []
-        self.listen_state(
-            self.callback_home_occupied,
-            self.args["home_occupancy_sensor_id"],
-            old="off",
-            new="on",
-        )
+        self.listen_state(self.callback_home_occupied, self.args["home_occupancy_sensor_id"], old="off", new="on")
 
         # Temporary watchers
         self.watchers_handles = []
@@ -172,33 +167,55 @@ class Notifier(hass.Hass):
 
         if "persistent" in data:
             if data["persistent"]:
+                if "tag" in data:
+                    notification_id = data["tag"]
+                else:
+                    notification_id = str(self.get_now_ts())
                 self.log("Persisting the notification on Home Assistant Front-end ...")
                 self.call_service(
-                    "notify/persistent_notification",
+                    "persistent_notification/create",
                     title=data["title"],
                     message=data["message"],
+                    notification_id=notification_id,
                 )
 
         if "until" in data and "tag" in data:
             until = data["until"]
             for watcher in until:
                 watcher_handle = {}
-                watcher_handle["id"] = self.listen_state(
-                    self.callback_until_watcher,
-                    watcher["entity_id"],
-                    new=str(watcher["new_state"]),
-                    oneshot=True,
-                    tag=data["tag"],
-                )
+                if "new_state" in watcher and "old_state" in watcher:
+                    watcher_handle["id"] = self.listen_state(
+                        self.callback_until_watcher,
+                        watcher["entity_id"],
+                        new=str(watcher["new_state"]),
+                        old=str(watcher["old_state"]),
+                        oneshot=True,
+                        tag=data["tag"],
+                    )
+                    transition = f"from {str(watcher['old_state'])} to {str(watcher['new_state'])}"
+                elif "new_state" in watcher:
+                    watcher_handle["id"] = self.listen_state(
+                        self.callback_until_watcher,
+                        watcher["entity_id"],
+                        new=str(watcher["new_state"]),
+                        oneshot=True,
+                        tag=data["tag"],
+                    )
+                    transition = f"to {str(watcher['new_state'])}"
+                elif "old_state" in watcher:
+                    watcher_handle["id"] = self.listen_state(
+                        self.callback_until_watcher,
+                        watcher["entity_id"],
+                        old=str(watcher["old_state"]),
+                        oneshot=True,
+                        tag=data["tag"],
+                    )
+                    transition = f"from {str(watcher['old_state'])}"
                 watcher_handle["tag"] = data["tag"]
                 self.watchers_handles.append(watcher_handle)
                 self.log(
-                    "All notifications with tag "
-                    + data["tag"]
-                    + " will be cleared if "
-                    + watcher["entity_id"]
-                    + " transitions to "
-                    + str(watcher["new_state"])
+                    f"All notifications with tag {data['tag']} will be cleared "
+                    f"if {watcher['entity_id']} transitions {transition}"
                 )
 
     def callback_notifier_discard_event_received(self, event_name, data, kwargs):
@@ -216,11 +233,8 @@ class Notifier(hass.Hass):
         notification_data = {}
         notification_data["tag"] = tag
         for person in self.args["persons"]:
-            self.call_service(
-                person["notification_service"],
-                message="clear_notification",
-                data=notification_data,
-            )
+            self.call_service(person["notification_service"], message="clear_notification", data=notification_data)
+        self.call_service("persistent_notification/dismiss", notification_id=tag)
         self.cancel_watchers(tag)
 
     def cancel_watchers(self, tag):
@@ -235,11 +249,15 @@ class Notifier(hass.Hass):
             notification_data["actions"] = []
             for callback in data["callback"]:
                 action = {"action": callback["event"], "title": callback["title"]}
+                if "icon" in callback:
+                    action["icon"] = "sfsymbols:" + callback["icon"]
+                if "destructive" in callback:
+                    action["destructive"] = callback["destructive"]
                 notification_data["actions"].append(action)
         if "timeout" in data:
             notification_data["timeout"] = data["timeout"]
         if "click_url" in data:
-            notification_data["clickAction"] = data["click_url"]
+            notification_data["url"] = data["click_url"]
         if "image_url" in data:
             notification_data["image"] = data["image_url"]
         if "icon" in data:
@@ -248,16 +266,17 @@ class Notifier(hass.Hass):
             notification_data["color"] = self.compute_color(data["color"])
         if "tag" in data:
             notification_data["tag"] = data["tag"]
+        if "interuption_level" in data:
+            notification_data["push"] = {"interruption-level": data["interuption_level"]}
+        if "siri_shortcut_name" in data:
+            notification_data["shortcut"] = {"name": data["siri_shortcut_name"]}
         return notification_data
 
     def send_to_person(self, data, person):
         self.log("Sending notification to " + person["name"])
         notification_data = self.build_notification_data(data)
         self.call_service(
-            person["notification_service"],
-            title=data["title"],
-            message=data["message"],
-            data=notification_data,
+            person["notification_service"], title=data["title"], message=data["message"], data=notification_data
         )
 
     def send_to_all(self, data):

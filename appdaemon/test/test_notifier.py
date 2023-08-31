@@ -440,7 +440,7 @@ class TestNotifier:
                     title="Notification Title",
                     message="Notification message",
                     data={
-                        "clickAction": "lovelace/vaccum",
+                        "url": "lovelace/vaccum",
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
@@ -451,7 +451,7 @@ class TestNotifier:
                     title="Notification Title",
                     message="Notification message",
                     data={
-                        "clickAction": "lovelace/vaccum",
+                        "url": "lovelace/vaccum",
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
@@ -758,7 +758,12 @@ class TestNotifier:
                         "tag": "notification_tag",
                     },
                 ),
-                mock.call("notify/persistent_notification", title="Notification Title", message="Notification message"),
+                mock.call(
+                    "persistent_notification/create",
+                    title="Notification Title",
+                    message="Notification message",
+                    notification_id="notification_tag",
+                ),
             ],
             any_order=True,
         )
@@ -872,11 +877,11 @@ class TestNotifier:
             ]
         )
 
-    def test__callback_notifier_event_received__send_to_all__until_tag_state_changed(
+    def test__callback_notifier_event_received__send_to_all__until_tag_state_new_changed(
         self, hass_driver, notifier: Notifier
     ):
         """
-        Test the callback function for clearing notifications with a specific tag when a certain state condition is met.
+        Test the callback function for clearing notifications with a specific tag when a state condition on new is met.
 
         This test case simulates clearing notifications with a specific tag when a specified state condition (sun.sun
         transitions to above_horizon) is met. It checks if the correct service calls are made to clear the notifications
@@ -890,11 +895,39 @@ class TestNotifier:
             None
         """
         # GIVEN
+        #   user1 and user2 are present
         #   Notification has been sent with tag and until set
-        self.test__callback_notifier_event_received__send_to_all__until_tag_initialization(hass_driver, notifier)
+        self._initialize_presence(hass_driver, notifier, 1, 1)
+
+        # WHEN
+        #   Notification is sent until change and associated with a callback
+        notifier.fire_event(
+            "NOTIFIER",
+            action="send_to_all",
+            title="Notification Title",
+            message="Notification message",
+            icon="mdi-bell",
+            color="deep-orange",
+            until=[
+                {"entity_id": "sun.sun", "new_state": "above_horizon"},
+            ],
+            tag="notification_tag",
+        )
 
         call_service = hass_driver.get_mock("call_service")
         log = hass_driver.get_mock("log")
+
+        log.assert_has_calls(
+            [
+                mock.call("NOTIFIER event received"),
+                mock.call("Sending notification to user1"),
+                mock.call("Sending notification to user2"),
+                mock.call(
+                    "All notifications with tag notification_tag will be cleared "
+                    "if sun.sun transitions to above_horizon"
+                ),
+            ]
+        )
 
         call_service.reset_mock()
         log.reset_mock()
@@ -921,16 +954,176 @@ class TestNotifier:
             ]
         )
 
+    def test__callback_notifier_event_received__send_to_all__until_tag_state_old_changed(
+        self, hass_driver, notifier: Notifier
+    ):
+        """
+        Test the callback function for clearing notifications with a specific tag when a state condition on old is met.
+
+        This test case simulates clearing notifications with a specific tag when a specified state condition (sun.sun
+        transitions to above_horizon) is met. It checks if the correct service calls are made to clear the notifications
+        with the specified tag.
+
+        Args:
+            hass_driver: Mocked Home Assistant driver.
+            notifier: Mocked Notifier instance.
+
+        Returns:
+            None
+        """
+        # GIVEN
+        #   user1 and user2 are present
+        #   Sun is above horizon
+        #   Notification has been sent with tag and until set
+        with hass_driver.setup():
+            hass_driver.set_state("sun.sun", "above_horizon")
+        self._initialize_presence(hass_driver, notifier, 1, 1)
+
+        # WHEN
+        #   Notification is sent until change and associated with a callback
+        notifier.fire_event(
+            "NOTIFIER",
+            action="send_to_all",
+            title="Notification Title",
+            message="Notification message",
+            icon="mdi-bell",
+            color="deep-orange",
+            until=[
+                {"entity_id": "sun.sun", "old_state": "above_horizon"},
+            ],
+            tag="notification_tag",
+        )
+
+        call_service = hass_driver.get_mock("call_service")
+        log = hass_driver.get_mock("log")
+
+        log.assert_has_calls(
+            [
+                mock.call("NOTIFIER event received"),
+                mock.call("Sending notification to user1"),
+                mock.call("Sending notification to user2"),
+                mock.call(
+                    "All notifications with tag notification_tag will be cleared "
+                    "if sun.sun transitions from above_horizon"
+                ),
+            ]
+        )
+
+        call_service.reset_mock()
+        log.reset_mock()
+
+        # WHEN
+        #   Until state is triggered
+        hass_driver.set_state("sun.sun", "below_horizon")
+
+        # THEN
+        #   Notification cancellation is sent to both user
+        #   Log is written
+        call_service.assert_has_calls(
+            [
+                mock.call("notify/user1_mobile", message="clear_notification", data={"tag": "notification_tag"}),
+                mock.call("notify/user2_mobile", message="clear_notification", data={"tag": "notification_tag"}),
+            ],
+            any_order=True,
+        )
+
+        log.assert_has_calls(
+            [
+                mock.call("Clearing notifications with tag notification_tag (if any) ..."),
+                mock.call("Removing watchers with tag notification_tag (if any) ..."),
+            ]
+        )
+
+    def test__callback_notifier_event_received__send_to_all__until_tag_state_old_and_new_changed(
+        self, hass_driver, notifier: Notifier
+    ):
+        """
+        Test the callback function for clearing notifications with a specific tag when a certain external event
+        is triggered.
+
+        This test case simulates clearing notifications with a specific tag when a specified external event
+        (NOTIFIER_DISCARD or mobile_app_notification_action) is triggered. It checks if the correct service calls
+        are made to clear the notifications with the specified tag.
+
+        Args:
+            hass_driver: Mocked Home Assistant driver.
+            notifier: Mocked Notifier instance.
+            external_event: The external event to trigger (NOTIFIER_DISCARD or mobile_app_notification_action).
+
+        Returns:
+            None
+        """
+        # GIVEN
+        #   Notification has been sent with tag and until set
+        with hass_driver.setup():
+            hass_driver.set_state("sun.sun", "above_horizon")
+        self._initialize_presence(hass_driver, notifier, 1, 1)
+
+        # WHEN
+        #   Notification is sent until change and associated with a callback
+        notifier.fire_event(
+            "NOTIFIER",
+            action="send_to_all",
+            title="Notification Title",
+            message="Notification message",
+            icon="mdi-bell",
+            color="deep-orange",
+            until=[
+                {"entity_id": "sun.sun", "old_state": "above_horizon", "new_state": "below_horizon"},
+            ],
+            tag="notification_tag",
+        )
+
+        call_service = hass_driver.get_mock("call_service")
+        log = hass_driver.get_mock("log")
+
+        log.assert_has_calls(
+            [
+                mock.call("NOTIFIER event received"),
+                mock.call("Sending notification to user1"),
+                mock.call("Sending notification to user2"),
+                mock.call(
+                    "All notifications with tag notification_tag will be cleared "
+                    "if sun.sun transitions from above_horizon to below_horizon"
+                ),
+            ]
+        )
+
+        call_service.reset_mock()
+        log.reset_mock()
+
+        # WHEN
+        #   Until state is triggered
+        hass_driver.set_state("sun.sun", "below_horizon")
+
+        # THEN
+        #   Notification cancellation is sent to both user
+        #   Log is written
+        call_service.assert_has_calls(
+            [
+                mock.call("notify/user1_mobile", message="clear_notification", data={"tag": "notification_tag"}),
+                mock.call("notify/user2_mobile", message="clear_notification", data={"tag": "notification_tag"}),
+            ],
+            any_order=True,
+        )
+
+        log.assert_has_calls(
+            [
+                mock.call("Clearing notifications with tag notification_tag (if any) ..."),
+                mock.call("Removing watchers with tag notification_tag (if any) ..."),
+            ]
+        )
+
     @pytest.mark.parametrize("external_event", ["NOTIFIER_DISCARD", "mobile_app_notification_action"])
     def test__callback_notifier_event_received__send_to_all__until_tag_event_discard(
         self, hass_driver, notifier: Notifier, external_event
     ):
         """
-        Test the callback function for clearing notifications with a specific tag when a certain external event 
+        Test the callback function for clearing notifications with a specific tag when a certain external event
         is triggered.
 
-        This test case simulates clearing notifications with a specific tag when a specified external event 
-        (NOTIFIER_DISCARD or mobile_app_notification_action) is triggered. It checks if the correct service calls 
+        This test case simulates clearing notifications with a specific tag when a specified external event
+        (NOTIFIER_DISCARD or mobile_app_notification_action) is triggered. It checks if the correct service calls
         are made to clear the notifications with the specified tag.
 
         Args:
