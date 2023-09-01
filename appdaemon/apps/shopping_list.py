@@ -153,7 +153,7 @@ class ShoppingList(hass.Hass):
         """
         if self.updating is True:
             # A shop change has just occurs lets ignore this call
-            return
+            return False
 
         self.log(f"Active shop has changed to {shop}")
 
