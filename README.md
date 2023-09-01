@@ -14,7 +14,9 @@ This repository is gathering the part of home assistant configuration and appdae
 
 ![demo](images/MultipleShoppingList_demo2.gif)
 
-Read the comment on the to of the script to see how to install and configure it. 
+Comment on the to of the script and [post on HomeAssitant forum](https://community.home-assistant.io/t/an-appdaemon-solution-for-multiple-shopping-list/608858?u=xavb) is explaining how to install and configure it. 
+
+Pour les francophones, un [sujet sur le forum HACF](https://forum.hacf.fr/t/liste-de-courses-multiples-multiple-shopping-lists/27450) explique comment configurer cette application.
 
 ### Garage Door
 
@@ -30,7 +32,7 @@ Thsi application is also managing the end of mowing session to ensure that sessi
 
 ### Notifier
 
-[Notifier](https://github.com/jlpouffier/home-assistant-config/blob/master/appdaemon/apps/notifier.py) is a script originally written by jlpouffier. The version provided in this directory has been slightly updated for optimisation. I also created a test script which covers 100% of the code to be sure that modification I add doesn't change to original behavior.
+[Notifier](https://github.com/jlpouffier/home-assistant-config/blob/master/appdaemon/apps/notifier.py) is a script originally written by jlpouffier. The version provided in this directory has been slightly updated for optimisation. I also created a test script to be sure that modification I add doesn't change to original behavior.
 
 ### Appdaemon testing
 
