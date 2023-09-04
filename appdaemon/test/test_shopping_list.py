@@ -89,16 +89,6 @@ class TestShoppingList:
     def test_initialization(self, hass_driver, shopping_list: ShoppingList, with_user):
         """
         Test case for initializing the shopping list manager application.
-
-        This test case covers the initialization of the shopping list manager application
-        and verifies that necessary listeners and event handlers are properly set up.
-
-        Args:
-            hass_driver (HassDriver): An instance of the Home Assistant driver.
-            shopping_list (ShoppingList): An instance of the ShoppingList class.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Application is starting
@@ -108,6 +98,7 @@ class TestShoppingList:
 
         # WHEN
         #   Application is initialized
+
         # THEN
         listen_state = hass_driver.get_mock("listen_state")
         if with_user:
@@ -141,18 +132,10 @@ class TestShoppingList:
     def test_shop_change(self, hass_driver, shopping_list: ShoppingList, shop):
         """
         Test case for simulating a change of active shop and its effects.
-
-        This test case simulates a change of the active shop and verifies the resulting
-        behaviors, such as making shopping list modifications and sending notifications.
-
-        Args:
-            hass_driver (HassDriver): An instance of the Home Assistant driver.
-            shopping_list (ShoppingList): An instance of the ShoppingList class.
-            shop (str): The shop identifier for parameterized testing.
-
-        Returns:
-            None
         """
+        # GIVEN
+        # WHEN
+        # THEN
         shopping_list.initialize()
 
         hass_driver.set_state("input_select.shops", shop)
@@ -199,19 +182,10 @@ class TestShoppingList:
     def test_user_enter_zone(self, hass_driver, shopping_list: ShoppingList, zone, user):
         """
         Test case for simulating user entry into a specified zone and its effects.
-
-        This test case simulates a user entering a specific zone and verifies the resulting
-        behaviors, such as making shopping list modifications and sending notifications.
-
-        Args:
-            hass_driver (HassDriver): An instance of the Home Assistant driver.
-            shopping_list (ShoppingList): An instance of the ShoppingList class.
-            zone (str): The zone identifier for parameterized testing.
-            user (str): The user identifier for parameterized testing.
-
-        Returns:
-            None
         """
+        # GIVEN
+        # WHEN
+        # THEN
         shopping_list.initialize()
 
         hass_driver.set_state("input_select.shops", ["shop1", "shop2"], attribute_name="options")
@@ -286,19 +260,10 @@ class TestShoppingList:
     def test_item_change(self, hass_driver, shopping_list: ShoppingList, shop):
         """
         Test case for verifying the behavior of item changes in the shopping list.
-
-        This test case simulates changes to the shopping list and checks whether the
-        expected behavior is observed. It verifies that the shopping list update events
-        trigger the appropriate actions and that file copying is performed as expected.
-
-        Args:
-            hass_driver (HassDriver): An instance of the Home Assistant driver.
-            shopping_list (ShoppingList): An instance of the ShoppingList class.
-            shop (str): The shop identifier for parameterized testing.
-
-        Returns:
-            None
         """
+        # GIVEN
+        # WHEN
+        # THEN
         shopping_list.initialize()
 
         with mock.patch("shutil.copyfile", autospec=True, create=True) as mock_copyfile:
