@@ -49,17 +49,6 @@ class TestGarageDoor:
     def test_initial_listen_state_with_sun_above_horizon(self, hass_driver, garage_door: GarageDoor, garage_door_state):
         """
         Test the initial state of listeners when the sun is above the horizon.
-
-        This test case checks the behavior of the GarageDoor application's listeners when the sun is
-        above the horizon during initialization.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-            garage_door_state (str): The initial state of the garage door.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Sun is below horizon
@@ -97,17 +86,6 @@ class TestGarageDoor:
     def test_initial_listen_state_with_sun_below_horizon(self, hass_driver, garage_door: GarageDoor, garage_door_state):
         """
         Test the initial state of listeners when the sun is below the horizon.
-
-        This test case checks the behavior of the GarageDoor application's listeners when the sun is
-        below the horizon during initialization.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-            garage_door_state (str): The initial state of the garage door.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Sun is below horizon
@@ -159,17 +137,6 @@ class TestGarageDoor:
     def test_change_listen_state_at_sunset(self, hass_driver, garage_door: GarageDoor, garage_door_state):
         """
         Test changing the state of listeners when the sun goes below the horizon.
-
-        This test case simulates the transition from the sun being above the horizon to being below the horizon.
-        It checks the behavior of the GarageDoor application's listeners during this transition.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-            garage_door_state (str): The initial state of the garage door.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Sun is above horizon and only callback for sun are set
@@ -216,6 +183,9 @@ class TestGarageDoor:
 
     @pytest.mark.parametrize("garage_door_state", ["on", "off"])
     def test_change_listen_state_at_sunrise(self, hass_driver, garage_door: GarageDoor, garage_door_state):
+        """
+        Test case for changing the listen_state behavior at sunrise.
+        """
         # GIVEN
         #   sun is below horizon and 4 callback are set for sun and garage door
         self.test_initial_listen_state_with_sun_below_horizon(hass_driver, garage_door, garage_door_state)
@@ -251,17 +221,6 @@ class TestGarageDoor:
     def test_callback_garage_door_open_initial(self, hass_driver, garage_door: GarageDoor):
         """
         Test changing the state of listeners when the sun goes above the horizon.
-
-        This test case simulates the transition from the sun being below the horizon to being above the horizon.
-        It checks the behavior of the GarageDoor application's listeners during this transition.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-            garage_door_state (str): The initial state of the garage door.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Sun is below horizon
@@ -310,16 +269,6 @@ class TestGarageDoor:
     def test_callback_garage_door_open_at_night(self, hass_driver, garage_door: GarageDoor):
         """
         Test the callback when the garage door is opened at night.
-
-        This test case simulates the scenario when the garage door is opened while the sun is below the horizon.
-        It checks whether the delayed notification is planned correctly.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Sun is below horizon
@@ -350,16 +299,6 @@ class TestGarageDoor:
     def test_callback_garage_door_open_then_closed_at_night(self, hass_driver, garage_door: GarageDoor):
         """
         Test the callback when the garage door is opened at night and then closed.
-
-        This test case simulates the scenario when the garage door is opened while the sun is below the horizon,
-        and then it is closed. It checks whether the delayed notification is canceled when the garage door is closed.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Garage door has been open at night
@@ -384,17 +323,6 @@ class TestGarageDoor:
     def test_callback_garage_door_remain_open_at_night(self, hass_driver, garage_door: GarageDoor):
         """
         Test the callback when the garage door remains open at night.
-
-        This test case simulates the scenario when the garage door is opened while the sun is below the horizon,
-        and it remains open for the duration of the delayed notification. It checks whether the delayed notification
-        is triggered and includes the correct conditions for cancellation.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            garage_door: Mocked GarageDoor instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Garage door has been open at night
