@@ -19,6 +19,7 @@
 from datetime import datetime, timezone
 
 import appdaemon.plugins.hass.hassapi as hass
+import pytz
 
 #
 # Automower App
@@ -181,6 +182,10 @@ class Automower(hass.Hass):
                 self.cancel_listen_state(handle)
             message = self.args["message_deactivated"]
         elif new == "week_schedule":
+            if len(self.state_handles) != 0:
+                # callback are already registred. No need to register again
+                return
+
             # register callbacks
             # Listen for rain sensors
             self.state_handles.append(self.listen_state(self.callback_rain_changed, "sensor.rain_last_6h"))
@@ -304,17 +309,21 @@ class Automower(hass.Hass):
             return
 
         # Get next end of session
+        local = pytz.timezone("UTC")
         mowing_session_end = datetime.strptime(
             self.get_state("calendar.nono", attribute="end_time"), "%Y-%m-%d %H:%M:%S"
-        ).astimezone(tz=None)
-        self.log(f"\tMowing session will end at {mowing_session_end}")
+        )
+        mowing_session_end_utc = local.localize(mowing_session_end, is_dst=None).astimezone(pytz.utc)
+
+        self.log(f"\tMowing session will end at {mowing_session_end_utc}")
 
         # Get next start
-        next_start = datetime.strptime(new, "%Y-%m-%dT%H:%M:%S+00:00").replace(tzinfo=timezone.utc).astimezone(tz=None)
+        next_start = datetime.strptime(new, "%Y-%m-%dT%H:%M:%S+00:00")
+        next_start_utc = local.localize(next_start, is_dst=None).astimezone(pytz.utc)
 
         # Check delta and decide action to perform
-        delta = (mowing_session_end - next_start).total_seconds() / 3600
-        self.log(f"\tNext start is planned at {next_start}")
+        delta = (mowing_session_end_utc - next_start_utc).total_seconds() / 3600
+        self.log(f"\tNext start is planned at {next_start_utc}")
         self.log(f"\tThe number of hour before mowing session end is {delta}")
         if delta < 0:
             self.log("\tSession completed. Lets restart tomorrow.")
