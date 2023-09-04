@@ -72,16 +72,6 @@ class TestNotifier:
     def test_initial_state(self, hass_driver, notifier: Notifier):
         """
         Test the initial state of the Notifier component.
-
-        This test case simulates the initialization of the Notifier component and checks if it is listening for the
-        expected events and states.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   notifier starts
@@ -111,17 +101,6 @@ class TestNotifier:
     def test__callback_notifier_event_received__send_to_person(self, hass_driver, notifier: Notifier, user):
         """
         Test the callback function for sending notifications to specific users.
-
-        This test case simulates sending notifications to different users and checks if the correct service call
-        is made to send the notification.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            user: User to whom the notification is sent.
-
-        Returns:
-            None
         """
         # GIVEN
         #   Notifier is initialized
@@ -166,18 +145,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for sending notifications to present users.
-
-        This test case simulates sending notifications to users who are present and checks if the correct service
-        calls are made to send the notifications. It also checks if no notification is sent when no user is present.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            distance_user1_home: Distance of user1 from home (1 for present, 1000 for not present).
-            distance_user2_home: Distance of user2 from home (1 for present, 1000 for not present).
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present or not
@@ -194,6 +161,7 @@ class TestNotifier:
             image_url="image.jpg",
             color="deep-orange",
             tag="notification_tag",
+            siri_shortcut_name="siri_shortcut",
         )
 
         # THEN
@@ -216,6 +184,7 @@ class TestNotifier:
                             "notification_icon": "mdi-bell",
                             "color": "#ff5722",
                             "tag": "notification_tag",
+                            "shortcut": {"name": "siri_shortcut"},
                         },
                     ),
                     mock.call(
@@ -227,6 +196,7 @@ class TestNotifier:
                             "notification_icon": "mdi-bell",
                             "color": "#ff5722",
                             "tag": "notification_tag",
+                            "shortcut": {"name": "siri_shortcut"},
                         },
                     ),
                 ],
@@ -249,6 +219,7 @@ class TestNotifier:
                     "notification_icon": "mdi-bell",
                     "color": "#ff5722",
                     "tag": "notification_tag",
+                    "shortcut": {"name": "siri_shortcut"},
                 },
             )
             log.assert_has_calls(
@@ -267,6 +238,7 @@ class TestNotifier:
                     "notification_icon": "mdi-bell",
                     "color": "#ff5722",
                     "tag": "notification_tag",
+                    "shortcut": {"name": "siri_shortcut"},
                 },
             )
             log.assert_has_calls(
@@ -286,19 +258,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for sending notifications to absent users.
-
-        This test case simulates sending notifications to users who are absent and checks if the correct
-        service calls are made to send the notifications. It also checks if no notification is sent when
-        no user is absent.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            distance_user1_home: Distance of user1 from home (1 for absent, 1000 for present).
-            distance_user2_home: Distance of user2 from home (1 for absent, 1000 for present).
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present or not
@@ -315,6 +274,7 @@ class TestNotifier:
             color="deep-orange",
             timeout=60,
             tag="notification_tag",
+            interuption_level=7,
         )
 
         #   Notification are sent to user absent
@@ -336,6 +296,7 @@ class TestNotifier:
                             "notification_icon": "mdi-bell",
                             "color": "#ff5722",
                             "tag": "notification_tag",
+                            "push": {"interruption-level": 7},
                         },
                     ),
                     mock.call(
@@ -347,6 +308,7 @@ class TestNotifier:
                             "notification_icon": "mdi-bell",
                             "color": "#ff5722",
                             "tag": "notification_tag",
+                            "push": {"interruption-level": 7},
                         },
                     ),
                 ],
@@ -364,7 +326,13 @@ class TestNotifier:
                 "notify/user1_mobile",
                 title="Notification Title",
                 message="Notification message",
-                data={"timeout": 60, "notification_icon": "mdi-bell", "color": "#ff5722", "tag": "notification_tag"},
+                data={
+                    "timeout": 60,
+                    "notification_icon": "mdi-bell",
+                    "color": "#ff5722",
+                    "tag": "notification_tag",
+                    "push": {"interruption-level": 7},
+                },
             )
             log.assert_has_calls(
                 [
@@ -377,7 +345,13 @@ class TestNotifier:
                 "notify/user2_mobile",
                 title="Notification Title",
                 message="Notification message",
-                data={"timeout": 60, "notification_icon": "mdi-bell", "color": "#ff5722", "tag": "notification_tag"},
+                data={
+                    "timeout": 60,
+                    "notification_icon": "mdi-bell",
+                    "color": "#ff5722",
+                    "tag": "notification_tag",
+                    "push": {"interruption-level": 7},
+                },
             )
             log.assert_has_calls(
                 [
@@ -396,18 +370,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for sending notifications to all users.
-
-        This test case simulates sending notifications to all users and checks if the correct service calls
-        are made to send the notifications.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            distance_user1_home: Distance of user1 from home (1 for absent, 1000 for present).
-            distance_user2_home: Distance of user2 from home (1 for absent, 1000 for present).
-
-        Returns:
-            None
         """
 
         # GIVEN
@@ -474,6 +436,9 @@ class TestNotifier:
     def test__callback_notifier_event_received__send_to_nearest(
         self, hass_driver, notifier: Notifier, distance_user1_home, distance_user2_home
     ):
+        """
+        Test case for handling NOTIFIER events with 'send_to_nearest' action.
+        """
         # GIVEN
         #   user1 and user2 are present or not
         self._initialize_presence(hass_driver, notifier, distance_user1_home, distance_user2_home)
@@ -558,18 +523,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for sending notifications to the nearest user.
-
-        This test case simulates sending notifications to the nearest user based on their proximity to home.
-        It checks if the correct service calls are made to send the notifications.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            distance_user1_home: Distance of user1 from home (1 for absent, 1000 for present).
-            distance_user2_home: Distance of user2 from home (1 for absent, 1000 for present).
-
-        Returns:
-            None
         """
 
         # GIVEN
@@ -640,16 +593,6 @@ class TestNotifier:
     def test__callback_notifier_event_received__send_when_present__with_present(self, hass_driver, notifier: Notifier):
         """
         Test the callback function for sending notifications when users are present and user are present.
-
-        This test case simulates sending notifications to users when users are present.
-        It checks if the correct service calls are made to send the notifications.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present
@@ -698,19 +641,12 @@ class TestNotifier:
             ]
         )
 
-    def test__callback_notifier_event_received__send_to_all__persistent(self, hass_driver, notifier: Notifier):
+    @pytest.mark.parametrize("with_tag", [True, False])
+    def test__callback_notifier_event_received__send_to_all__persistent(
+        self, hass_driver, notifier: Notifier, with_tag
+    ):
         """
         Test the callback function for sending persistent notifications to all users.
-
-        This test case simulates sending persistent notifications to all users when both users are present.
-        It checks if the correct service calls are made to send the notifications and add the persistent notification.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present
@@ -718,16 +654,28 @@ class TestNotifier:
 
         # WHEN
         #   Notification is sent to all with persistence
-        notifier.fire_event(
-            "NOTIFIER",
-            action="send_to_all",
-            title="Notification Title",
-            message="Notification message",
-            icon="mdi-bell",
-            color="deep-orange",
-            persistent=True,
-            tag="notification_tag",
-        )
+        with mock.patch("appdaemon.adapi.ADAPI.get_now_ts", return_value=int(42)):
+            if with_tag:
+                notifier.fire_event(
+                    "NOTIFIER",
+                    action="send_to_all",
+                    title="Notification Title",
+                    message="Notification message",
+                    icon="mdi-bell",
+                    color="deep-orange",
+                    persistent=True,
+                    tag="notification_tag",
+                )
+            else:
+                notifier.fire_event(
+                    "NOTIFIER",
+                    action="send_to_all",
+                    title="Notification Title",
+                    message="Notification message",
+                    icon="mdi-bell",
+                    color="deep-orange",
+                    persistent=True,
+                )
 
         # THEN
         #   Both user are notified
@@ -746,6 +694,11 @@ class TestNotifier:
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
+                    }
+                    if with_tag
+                    else {
+                        "notification_icon": "mdi-bell",
+                        "color": "#ff5722",
                     },
                 ),
                 mock.call(
@@ -756,13 +709,18 @@ class TestNotifier:
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
+                    }
+                    if with_tag
+                    else {
+                        "notification_icon": "mdi-bell",
+                        "color": "#ff5722",
                     },
                 ),
                 mock.call(
                     "persistent_notification/create",
                     title="Notification Title",
                     message="Notification message",
-                    notification_id="notification_tag",
+                    notification_id="notification_tag" if with_tag else "42",
                 ),
             ],
             any_order=True,
@@ -782,18 +740,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for sending notifications to all users until a certain condition is met.
-
-        This test case simulates sending notifications to all users until a specified condition is met
-        (sun.sun transitions to above_horizon). It checks if the correct service calls are made to send the
-        notifications with the specified callback and until parameters, and if the appropriate state listener
-        is added to watch the until condition.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present
@@ -809,7 +755,7 @@ class TestNotifier:
             icon="mdi-bell",
             color="deep-orange",
             callback=[
-                {"title": "actuator.garage_door", "event": "close_door"},
+                {"title": "actuator.garage_door", "event": "close_door", "icon": "icon", "destructive": True},
             ],
             until=[
                 {"entity_id": "sun.sun", "new_state": "above_horizon"},
@@ -832,7 +778,14 @@ class TestNotifier:
                     title="Notification Title",
                     message="Notification message",
                     data={
-                        "actions": [{"action": "close_door", "title": "actuator.garage_door"}],
+                        "actions": [
+                            {
+                                "action": "close_door",
+                                "title": "actuator.garage_door",
+                                "icon": "sfsymbols:icon",
+                                "destructive": True,
+                            }
+                        ],
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
@@ -843,7 +796,14 @@ class TestNotifier:
                     title="Notification Title",
                     message="Notification message",
                     data={
-                        "actions": [{"action": "close_door", "title": "actuator.garage_door"}],
+                        "actions": [
+                            {
+                                "action": "close_door",
+                                "title": "actuator.garage_door",
+                                "icon": "sfsymbols:icon",
+                                "destructive": True,
+                            }
+                        ],
                         "notification_icon": "mdi-bell",
                         "color": "#ff5722",
                         "tag": "notification_tag",
@@ -882,17 +842,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for clearing notifications with a specific tag when a state condition on new is met.
-
-        This test case simulates clearing notifications with a specific tag when a specified state condition (sun.sun
-        transitions to above_horizon) is met. It checks if the correct service calls are made to clear the notifications
-        with the specified tag.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present
@@ -959,17 +908,6 @@ class TestNotifier:
     ):
         """
         Test the callback function for clearing notifications with a specific tag when a state condition on old is met.
-
-        This test case simulates clearing notifications with a specific tag when a specified state condition (sun.sun
-        transitions to above_horizon) is met. It checks if the correct service calls are made to clear the notifications
-        with the specified tag.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-
-        Returns:
-            None
         """
         # GIVEN
         #   user1 and user2 are present
@@ -1040,18 +978,6 @@ class TestNotifier:
         """
         Test the callback function for clearing notifications with a specific tag when a certain external event
         is triggered.
-
-        This test case simulates clearing notifications with a specific tag when a specified external event
-        (NOTIFIER_DISCARD or mobile_app_notification_action) is triggered. It checks if the correct service calls
-        are made to clear the notifications with the specified tag.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            external_event: The external event to trigger (NOTIFIER_DISCARD or mobile_app_notification_action).
-
-        Returns:
-            None
         """
         # GIVEN
         #   Notification has been sent with tag and until set
@@ -1121,18 +1047,6 @@ class TestNotifier:
         """
         Test the callback function for clearing notifications with a specific tag when a certain external event
         is triggered.
-
-        This test case simulates clearing notifications with a specific tag when a specified external event
-        (NOTIFIER_DISCARD or mobile_app_notification_action) is triggered. It checks if the correct service calls
-        are made to clear the notifications with the specified tag.
-
-        Args:
-            hass_driver: Mocked Home Assistant driver.
-            notifier: Mocked Notifier instance.
-            external_event: The external event to trigger (NOTIFIER_DISCARD or mobile_app_notification_action).
-
-        Returns:
-            None
         """
         # GIVEN
         #   Notification has been sent with tag and until set
