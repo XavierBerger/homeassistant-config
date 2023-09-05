@@ -184,8 +184,7 @@ class HassDriver:
 
         if fully_qualified:
             return matched_states[entity_id]
-        else:
-            return matched_states
+        return matched_states
 
     def get_number_of_state_callbacks(self, entity):
         if entity in self._state_spys.keys():
