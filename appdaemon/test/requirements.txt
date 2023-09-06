@@ -1,3 +1,4 @@
+anybadge==1.14.0
 appdaemon==4.4.2
 coverage==7.2.7
 esphome==2023.8.0

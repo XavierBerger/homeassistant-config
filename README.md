@@ -1,3 +1,5 @@
+![](images/pylint.svg) ![](images/pytest.svg) ![](images/coverage.svg)
+
 # Home Assistant Config
 
 This repository is gathering the part of home assistant configuration and appdaemon script I want to share with the community.
