@@ -1,4 +1,4 @@
-![](images/pylint.svg) ![](images/pytest.svg) ![](images/coverage.svg)
+![](images/license.svg) ![](https://xavierberger.github.io/homeassistant-config/pylint.svg) ![](https://xavierberger.github.io/homeassistant-config/pytest.svg) ![](https://xavierberger.github.io/homeassistant-config/coverage.svg)
 
 # Home Assistant Config
 
