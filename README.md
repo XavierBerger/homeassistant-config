@@ -1,9 +1,11 @@
-![](images/license.svg) ![](https://xavierberger.github.io/homeassistant-config/pylint.svg) ![](https://xavierberger.github.io/homeassistant-config/pytest.svg) ![](https://xavierberger.github.io/homeassistant-config/coverage.svg)
+<a href="LICENSE">![](images/license.svg)</a> 
+<a href="https://xavierberger.github.io/homeassistant-config/">![](https://xavierberger.github.io/homeassistant-config/pylint.svg)</a>
+<a href="https://xavierberger.github.io/homeassistant-config/">![](https://xavierberger.github.io/homeassistant-config/pytest.svg)</a>
+<a href="https://xavierberger.github.io/homeassistant-config/">![](https://xavierberger.github.io/homeassistant-config/coverage.svg)</a>
 
 # Home Assistant Config
 
 This repository is gathering the part of home assistant configuration and appdaemon script I want to share with the community.
-
 
 
 ## Appdaemon applications
