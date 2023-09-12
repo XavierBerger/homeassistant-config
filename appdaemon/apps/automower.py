@@ -36,13 +36,16 @@ import pytz
 #   If remaining duration of mowing after next start is less than 1 hour, stay parked
 #
 # Rain management:
-#   When it starts raining, go to dock or stay parcked for 24h
+#   When it starts raining, go to dock or stay parcked for maximum possible duration (42 days)
 #   When sun is at its top, if no rain occurs during the 6 previous hours, restart mowing
 #   If no rain occurs during the 6 previous hours and sun is setting, restart mowing
 #
 # Automation management:
-#   Only activate this automation when "automower_automation" boolean input is on
-#   Disable automation if automower is parked unti next order from another application
+#   This automation is active only automower is not "parked until further notice"
+#   This verification is designed to be sure that manual order will never be overwritten
+#
+# Notification:
+#   Notification are sent to Telegram. This allow to have an history of what happen and when it happens.
 
 
 class Automower(hass.Hass):
@@ -93,17 +96,8 @@ class Automower(hass.Hass):
             None
         """
         self.log("Send notification")
-        self.log(f"\ttitle: {kwargs['title']}")
         self.log(f"\tMessage: {kwargs['message']}")
-        self.fire_event(
-            "NOTIFIER",
-            action="send_to_all",
-            title=kwargs["title"],
-            message=kwargs["message"],
-            icon="mdi-robot-mower-outline",
-            color="deep-orange",
-            tag="nono",
-        )
+        self.call_service(service="telegram_bot/send_message", title="🏡 Nono", **kwargs)
 
     def service(self, message, command, **kwargs):
         """
@@ -123,7 +117,7 @@ class Automower(hass.Hass):
         self.log("Call service")
         self.log(f"\t{command} ({kwargs})")
         self.call_service(command, **kwargs)
-        self.send_notification(title="Nono", message=message)
+        self.send_notification(message=message, disable_notification=True)
 
     def force_park(self, message, duration):
         """
@@ -196,7 +190,13 @@ class Automower(hass.Hass):
             )
 
             # Listen next start
-            self.state_handles.append(self.listen_state(self.callback_next_start_changed, "sensor.nono_next_start"))
+            self.state_handles.append(
+                self.listen_state(
+                    self.callback_next_start_changed,
+                    "sensor.nono_next_start",
+                    immediate=True,
+                )
+            )
             message = self.args["message_activated"]
         else:
             # Robot is mowing or having an error
@@ -204,7 +204,7 @@ class Automower(hass.Hass):
 
         self.log("Automower automation activation triggered")
         self.log(f"\t{message}")
-        self.send_notification(title="Nono", message=message)
+        self.send_notification(message=message)
 
     def callback_rain_changed(self, entity, attribute, old, new, kwargs):
         """
@@ -220,8 +220,6 @@ class Automower(hass.Hass):
             None
         """
         self.log("Rain event triggered")
-        self.log(f"\told={old}")
-        self.log(f"\tnew={new}")
         self.log_parked_because_of_rain()
 
         try:
@@ -248,13 +246,17 @@ class Automower(hass.Hass):
         elif new_value == 0.0:
             # No rain occurs during last 6 hours and sun is setting
             if self.get_state("sun.sun", attribute="rising"):
-                self.log("No rain during last 6h, waiting for noon to restart.")
+                message = "No rain during last 6h, waiting for noon to restart."
+                self.log(message)
+                self.send_notification(message=message, disable_notification=True)
             elif self.get_state("sun.sun") == "below_horizon":
-                self.log("No rain during last 6h, sun is below horizon, waiting for tomorow noon to restart.")
+                message = "No rain during last 6h, sun is below horizon, waiting for tomorow noon to restart."
+                self.log(f"\t{message}")
+                self.send_notification(message=message, disable_notification=True)
             else:
                 self.restart_after_rain()
         else:
-            # It is raining
+            # It is still raining or rain has stopped recently
             self.log("\tRain occured during last 6h, lawn shouldn't be dry yet.")
         self.log_parked_because_of_rain()
 
@@ -277,9 +279,12 @@ class Automower(hass.Hass):
             if self.get_state("sensor.rain_last_6h") == 0.0:
                 self.restart_after_rain()
             else:
-                self.log("\tLawn shouldn't be dry yt. Staying parked.")
+                message = "Lawn shouldn't be dry yet. Staying parked."
+                self.log(f"\t{message}")
+                self.send_notification(message=message, disable_notification=True)
         else:
-            self.log("\tNot park because of rain. Nothing to do.")
+            message = "Not park because of rain. Nothing to do."
+            self.log(f"\t{message}")
         self.log_parked_because_of_rain()
 
     def callback_next_start_changed(self, entity, attribute, old, new, kwargs):
@@ -297,7 +302,8 @@ class Automower(hass.Hass):
         """
         self.log("Next start event triggered")
         if self.get_state("binary_sensor.parked_because_of_rain") == "on":
-            self.log("\tRobot is parked because of rain. Nothing to check.")
+            message = "Robot is parked because of rain. Nothing to check."
+            self.log(f"\t{message}")
             return
 
         self.log(f"\told={old}")
@@ -305,7 +311,9 @@ class Automower(hass.Hass):
 
         # If robot is currently mowing, we don't have next start
         if new == "unknown":
-            self.log("Robot is currently mowing, let it come back to base before checking.")
+            message = "Robot is currently mowing, let it come back to base before checking."
+            self.log(f"\t{message}")
+            self.send_notification(message=message, disable_notification=True)
             return
 
         # Get next end of session
@@ -326,12 +334,16 @@ class Automower(hass.Hass):
         self.log(f"\tNext start is planned at {next_start_utc}")
         self.log(f"\tThe number of hour before mowing session end is {delta}")
         if delta < 0:
-            self.log("\tSession completed. Lets restart tomorrow.")
+            message = f"Session completed. Lets restart tomorrow at {next_start}"
+            self.log(f"\t{message}")
+            self.send_notification(message=message, disable_notification=True)
         elif delta < 1:
-            self.log("\tDuration between next start and end of session is less than 1 hour, stay parked.")
+            self.log(f"\t{self.args['message_end_of_session_soon']}")
             self.force_park(
                 message=self.args["message_end_of_session_soon"],
                 duration=180,
             )
         else:  # delta >= 1
-            self.log("Duration between next start and end of session is greater than 1 hour.")
+            message = f"Duration between next start ({next_start}) and end of session is greater than 1 hour."
+            self.log(f"\t{message}")
+            self.send_notification(message=f"Next start planned at {next_start}", disable_notification=True)
