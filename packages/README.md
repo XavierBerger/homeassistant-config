@@ -1,6 +1,6 @@
 # Package configuration
 ```
-config
+packages
 ├── addons
 │   ├── proximity.yaml
 │   ├── sun.yaml
