@@ -1,0 +1,75 @@
+# Statistique de pluie des derniere heures
+sensor:
+  - platform: statistics
+    name: delta_rain_96h
+    entity_id: sensor.bresser_7in1_44014_rt
+    state_characteristic: change
+    unique_id: "delta_rain_96h"
+    max_age:
+      hours: 96
+    sampling_size: 3456000
+  - platform: statistics
+    name: delta_rain_72h
+    entity_id: sensor.bresser_7in1_44014_rt
+    state_characteristic: change
+    unique_id: "delta_rain_72h"
+    max_age:
+      hours: 72
+    sampling_size: 2592000
+  - platform: statistics
+    name: delta_rain_48h
+    entity_id: sensor.bresser_7in1_44014_rt
+    state_characteristic: change
+    unique_id: "delta_rain_48h"
+    max_age:
+      hours: 48
+    sampling_size: 1728000
+  - platform: statistics
+    name: delta_rain_24h
+    entity_id: sensor.bresser_7in1_44014_rt
+    state_characteristic: change
+    unique_id: "delta_rain_24h"
+    max_age:
+      hours: 24
+    sampling_size: 864000
+  - platform: statistics
+    name: "delta_rain_6h"
+    entity_id: sensor.bresser_7in1_44014_rt
+    state_characteristic: change
+    unique_id: "delta_rain_6h"
+    max_age:
+      hours: 6
+    sampling_size: 216000
+
+template:
+  - sensor:
+      - name: "rain_last_96h"
+        device_class: precipitation
+        state_class: measurement
+        unique_id: "rain_last_96h"
+        unit_of_measurement: "mm"
+        state: "{{ max(float(states('sensor.delta_rain_96h'),0.0),float(0.0)) }}"
+      - name: "rain_last_72h"
+        device_class: precipitation
+        state_class: measurement
+        unique_id: "rain_last_72h"
+        unit_of_measurement: "mm"
+        state: "{{ max(float(states('sensor.delta_rain_72h'),0.0),float(0.0)) }}"
+      - name: "rain_last_48h"
+        device_class: precipitation
+        state_class: measurement
+        unique_id: "rain_last_48h"
+        unit_of_measurement: "mm"
+        state: "{{ max(float(states('sensor.delta_rain_48h'),0.0),float(0.0)) }}"
+      - name: "rain_last_24h"
+        device_class: precipitation
+        state_class: measurement
+        unique_id: "rain_last_24h"
+        unit_of_measurement: "mm"
+        state: "{{ max(float(states('sensor.delta_rain_24h'),0.0),float(0.0)) }}"
+      - name: "rain_last_6h"
+        device_class: precipitation
+        state_class: measurement
+        unique_id: "rain_last_6h"
+        unit_of_measurement: "mm"
+        state: "{{ max(float(states('sensor.delta_rain_6h'),0.0),float(0.0)) }}"

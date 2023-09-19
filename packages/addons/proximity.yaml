@@ -1,0 +1,7 @@
+proximity:
+    distance_xav_home:
+        zone: home
+        devices:
+            - device_tracker.sm_a405fn
+        tolerance: 50
+        unit_of_measurement: m

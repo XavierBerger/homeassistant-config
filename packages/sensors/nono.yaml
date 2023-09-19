@@ -1,0 +1,5 @@
+template:
+  - binary_sensor:
+      - name: parked_because_of_rain
+        unique_id: parked_because_of_rain
+        state: "False"

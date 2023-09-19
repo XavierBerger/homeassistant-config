@@ -1,0 +1,6 @@
+template:
+  - binary_sensor:
+      - name: home_occupied
+        unique_id: home_occupied
+        state: "{{is_state('person.xavier_berger', 'home')}}"
+        device_class: occupancy
