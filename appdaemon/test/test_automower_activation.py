@@ -91,6 +91,8 @@ class TestAutomowerActivation:
                     mock.call("\tpark max duration : 60480"),
                     mock.call("Next start event triggered"),
                     mock.call("\tRobot is parked because of rain. Nothing to check."),
+                    mock.call("Send notification"),
+                    mock.call("\tMessage: Robot is parked because of rain. Nothing to check."),
                     mock.call("Automower automation activation triggered"),
                     mock.call("\tAdvanced automation is activated."),
                     mock.call("Send notification"),

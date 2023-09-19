@@ -56,6 +56,7 @@ class HassDriver:
             run_minutely=mock.Mock(),
             set_state=mock.Mock(side_effect=self._se_set_state),
             time=mock.Mock(),
+            get_timezone=mock.Mock(return_value="Europe/Paris"),
             turn_off=mock.Mock(),
             turn_on=mock.Mock(),
         )
@@ -63,9 +64,7 @@ class HassDriver:
         self._setup_active = False
         self._states: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"state": None})
         self._events: Dict[str, Any] = defaultdict(lambda: [])
-        self._state_spys: Dict[Union[str, None], List[StateSpy]] = defaultdict(
-            lambda: []
-        )
+        self._state_spys: Dict[Union[str, None], List[StateSpy]] = defaultdict(lambda: [])
         self._event_spys: Dict[str, EventSpy] = defaultdict(lambda: [])
         self._run_in_simulations = []
         self._clock_time = 0  # Simulated time in seconds
@@ -88,9 +87,7 @@ class HassDriver:
             try:
                 getattr(hass.Hass, meth_name)
             except AttributeError as exception:
-                raise AttributeError(
-                    "Attempt to mock non existing method: ", meth_name
-                ) from exception
+                raise AttributeError("Attempt to mock non existing method: ", meth_name) from exception
             _LOGGER.debug("Patching hass.Hass.%s", meth_name)
             setattr(hass.Hass, meth_name, impl)
 
@@ -121,17 +118,13 @@ class HassDriver:
         yield None
         self._setup_active = False
 
-    def _se_set_state(
-        self, entity_id: str, state, attribute_name="state", **kwargs: Optional[Any]
-    ):
+    def _se_set_state(self, entity_id: str, state, attribute_name="state", **kwargs: Optional[Any]):
         state_entry = self._states[entity_id]
 
         # Update the state entry
         state_entry[attribute_name] = state
 
-    def set_state(
-        self, entity, state, *, attribute_name="state", previous=None, trigger=None
-    ) -> None:
+    def set_state(self, entity, state, *, attribute_name="state", previous=None, trigger=None) -> None:
         """
         Update/set state of an entity.
 
@@ -194,14 +187,10 @@ class HassDriver:
 
         # With matched states, map the provided attribute (if applicable)
         if attribute != "all":
-            matched_states = {
-                eid: state.get(attribute) for eid, state in matched_states.items()
-            }
+            matched_states = {eid: state.get(attribute) for eid, state in matched_states.items()}
 
         if default is not None:
-            matched_states = {
-                eid: state or default for eid, state in matched_states.items()
-            }
+            matched_states = {eid: state or default for eid, state in matched_states.items()}
 
         if fully_qualified:
             return matched_states[entity_id]
@@ -213,9 +202,7 @@ class HassDriver:
             return len(self._state_spys.get(entity))
         return 0
 
-    def _se_listen_state(
-        self, callback, entity=None, attribute=None, new=None, old=None, **kwargs
-    ) -> StateSpy:
+    def _se_listen_state(self, callback, entity=None, attribute=None, new=None, old=None, **kwargs) -> StateSpy:
         spy = StateSpy(
             callback=callback,
             attribute=attribute or "state",

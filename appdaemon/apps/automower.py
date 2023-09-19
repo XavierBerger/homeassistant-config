@@ -52,13 +52,6 @@ class Automower(hass.Hass):
     def initialize(self):
         """
         Initialize the Automower Automation.
-
-        This method sets up the necessary listeners and handles for the Automower Automation.
-        It registers a callback for monitoring the Automower's sensors and initializes
-        parameters for the automation.
-
-        Returns:
-            None
         """
         self.log("Starting Automower Automation")
 
@@ -69,31 +62,22 @@ class Automower(hass.Hass):
         self.park_max_duration = self.get_state("number.nono_park_for", attribute="max")
         self.log(f"\tpark max duration : {self.park_max_duration}")
 
-        # This sensor is not only give problem but also tell sheddule or if park until further notice has been activated
+        # This sensor tells if 'sheddule' or 'park until further notice' has been activated
         self.listen_state(self.callback_automower_automation, "sensor.nono_problem_sensor", immediate=True)
+
+    ####################################################################################################################
+    # UTILITIES
+    ####################################################################################################################
 
     def log_parked_because_of_rain(self):
         """
         Log the status of the 'parked_because_of_rain' binary sensor.
-
-        This method logs the current state of the 'parked_because_of_rain' binary sensor.
-
-        Returns:
-            None
         """
         self.log(f"\tbinary_sensor.parked_because_of_rain: {self.get_state('binary_sensor.parked_because_of_rain')}")
 
     def send_notification(self, **kwargs):
         """
         Send a notification.
-
-        This method sends a notification with the specified title and message.
-
-        Args:
-            kwargs: Keyword arguments containing the notification title and message.
-
-        Returns:
-            None
         """
         self.log("Send notification")
         self.log(f"\tMessage: {kwargs['message']}")
@@ -102,17 +86,6 @@ class Automower(hass.Hass):
     def service(self, message, command, **kwargs):
         """
         Call a service and send a notification.
-
-        This method calls a specified service with given keyword arguments and sends a notification
-        with a specified title and message.
-
-        Args:
-            message (str): The message for the notification.
-            command (str): The service command to call.
-            kwargs: Keyword arguments for the service call.
-
-        Returns:
-            None
         """
         self.log("Call service")
         self.log(f"\t{command} ({kwargs})")
@@ -122,15 +95,6 @@ class Automower(hass.Hass):
     def force_park(self, message, duration):
         """
         Force the Automower to park for a specific duration.
-
-        This method triggers a service call to set the parking duration for the Automower.
-
-        Args:
-            message (str): The message for the notification.
-            duration (float): The duration for which the Automower should be parked.
-
-        Returns:
-            None
         """
         self.service(
             message=message,
@@ -142,12 +106,6 @@ class Automower(hass.Hass):
     def restart_after_rain(self):
         """
         Restart the Automower after a period of rain.
-
-        This method triggers a service call to restart the Automower and updates the state of the
-        'parked_because_of_rain' binary sensor.
-
-        Returns:
-            None
         """
         self.service(
             message=self.args["message_lawn_is_dry"],
@@ -156,26 +114,22 @@ class Automower(hass.Hass):
         )
         self.set_state("binary_sensor.parked_because_of_rain", state="off")
 
+    ####################################################################################################################
+    # APPLICATION MANAGEMENT
+    ####################################################################################################################
+
     def callback_automower_automation(self, entity, attribute, old, new, kwargs):
         """
         Callback for automower automation activation.
-
-        This method is called when the Automower automation activation is triggered.
-        It handles different automation scenarios based on the new state value.
-
-        Args:
-            Arguments as define into Appdaemon callback documentation.
-
-        Returns:
-            None
         """
+        # self.log(f"new={new}")
         if new == "parked_until_further_notice":
             # Deregister callbacks
             while len(self.state_handles) >= 1:
                 handle = self.state_handles.pop()
                 self.cancel_listen_state(handle)
             message = self.args["message_deactivated"]
-        elif new == "week_schedule":
+        elif new in ["week_schedule", "charging"]:
             if len(self.state_handles) != 0:
                 # callback are already registred. No need to register again
                 return
@@ -184,7 +138,7 @@ class Automower(hass.Hass):
             # Listen for rain sensors
             self.state_handles.append(self.listen_state(self.callback_rain_changed, "sensor.rain_last_6h"))
 
-            # Listen for sun start to decreass
+            # Listen for sun start to decrease
             self.state_handles.append(
                 self.listen_state(self.callback_sun_is_at_top, "sun.sun", attribute="rising", new=False)
             )
@@ -206,18 +160,13 @@ class Automower(hass.Hass):
         self.log(f"\t{message}")
         self.send_notification(message=message)
 
+    ####################################################################################################################
+    # RAIN MANAGEMENT
+    ####################################################################################################################
+
     def callback_rain_changed(self, entity, attribute, old, new, kwargs):
         """
         Callback for handling rain sensor changes.
-
-        This method is called when the rain sensor state changes. It handles different scenarios based
-        on the rain sensor values to control the Automower's behavior during rain.
-
-        Args:
-            Arguments as define into Appdaemon callback documentation.
-
-        Returns:
-            None
         """
         self.log("Rain event triggered")
         self.log_parked_because_of_rain()
@@ -263,15 +212,6 @@ class Automower(hass.Hass):
     def callback_sun_is_at_top(self, entity, attribute, old, new, kwargs):
         """
         Callback for handling sun position changes.
-
-        This method is called when the sun's position changes. It checks the state of the
-        'parked_because_of_rain' binary sensor and the rain sensor to determine the Automower's behavior.
-
-        Args:
-            Arguments as define into Appdaemon callback documentation.
-
-        Returns:
-            None
         """
         self.log("Sun event triggered")
         self.log_parked_because_of_rain()
@@ -287,23 +227,19 @@ class Automower(hass.Hass):
             self.log(f"\t{message}")
         self.log_parked_because_of_rain()
 
+    ####################################################################################################################
+    # SESSION MANAGEMENT
+    ####################################################################################################################
+
     def callback_next_start_changed(self, entity, attribute, old, new, kwargs):
         """
         Callback for handling changes in the next start time.
-
-        This method is called when the next start time changes. It calculates the time difference
-        between the next start and the end of the mowing session to determine the appropriate action.
-
-        Args:
-            Arguments as define into Appdaemon callback documentation.
-
-        Returns:
-            None
         """
         self.log("Next start event triggered")
         if self.get_state("binary_sensor.parked_because_of_rain") == "on":
             message = "Robot is parked because of rain. Nothing to check."
             self.log(f"\t{message}")
+            self.send_notification(message=message, disable_notification=True)
             return
 
         self.log(f"\told={old}")
@@ -317,21 +253,23 @@ class Automower(hass.Hass):
             return
 
         # Get next end of session
-        local = pytz.timezone("UTC")
         mowing_session_end = datetime.strptime(
             self.get_state("calendar.nono", attribute="end_time"), "%Y-%m-%d %H:%M:%S"
         )
+
+        print(f"self.get_timezone() = {self.get_timezone()}")
+        local = pytz.timezone(self.get_timezone())
         mowing_session_end_utc = local.localize(mowing_session_end, is_dst=None).astimezone(pytz.utc)
 
-        self.log(f"\tMowing session will end at {mowing_session_end_utc}")
+        self.log(f"\tMowing session will end at {mowing_session_end} => {mowing_session_end_utc} UTC")
 
         # Get next start
-        next_start = datetime.strptime(new, "%Y-%m-%dT%H:%M:%S+00:00")
-        next_start_utc = local.localize(next_start, is_dst=None).astimezone(pytz.utc)
+        next_start_utc = datetime.strptime(new, "%Y-%m-%dT%H:%M:%S+00:00").replace(tzinfo=pytz.utc)
+        next_start = next_start_utc.astimezone(local)
 
         # Check delta and decide action to perform
         delta = (mowing_session_end_utc - next_start_utc).total_seconds() / 3600
-        self.log(f"\tNext start is planned at {next_start_utc}")
+        self.log(f"\tNext start is planned at {next_start} => {next_start_utc} UTC")
         self.log(f"\tThe number of hour before mowing session end is {delta}")
         if delta < 0:
             message = f"Session completed. Lets restart tomorrow at {next_start}"

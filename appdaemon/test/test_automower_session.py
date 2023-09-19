@@ -66,7 +66,7 @@ class TestAutomowerSession:
 
         # WHEN
         #   Next start is defined as tomorrow
-        hass_driver.set_state("sensor.nono_next_start", "2023-08-04T11:00:00+00:00")
+        hass_driver.set_state("sensor.nono_next_start", "2023-08-04T09:00:00+00:00")
 
         # THEN
         #   Session is completed, wait until tomorrow.
@@ -74,13 +74,13 @@ class TestAutomowerSession:
             [
                 mock.call("Next start event triggered"),
                 mock.call("\told=2023-08-04T18:30:00+00:00"),
-                mock.call("\tnew=2023-08-04T11:00:00+00:00"),
-                mock.call("\tMowing session will end at 2023-08-03 19:00:00+00:00"),
-                mock.call("\tNext start is planned at 2023-08-04 11:00:00+00:00"),
+                mock.call("\tnew=2023-08-04T09:00:00+00:00"),
+                mock.call("\tMowing session will end at 2023-08-03 19:00:00 => 2023-08-03 17:00:00+00:00 UTC"),
+                mock.call("\tNext start is planned at 2023-08-04 11:00:00+02:00 => 2023-08-04 09:00:00+00:00 UTC"),
                 mock.call("\tThe number of hour before mowing session end is -16.0"),
-                mock.call("\tSession completed. Lets restart tomorrow at 2023-08-04 11:00:00"),
+                mock.call("\tSession completed. Lets restart tomorrow at 2023-08-04 11:00:00+02:00"),
                 mock.call("Send notification"),
-                mock.call("\tMessage: Session completed. Lets restart tomorrow at 2023-08-04 11:00:00"),
+                mock.call("\tMessage: Session completed. Lets restart tomorrow at 2023-08-04 11:00:00+02:00"),
             ]
         )
 
@@ -90,7 +90,7 @@ class TestAutomowerSession:
                 mock.call(
                     service="telegram_bot/send_message",
                     title="🏡 Nono",
-                    message="Session completed. Lets restart tomorrow at 2023-08-04 11:00:00",
+                    message="Session completed. Lets restart tomorrow at 2023-08-04 11:00:00+02:00",
                     disable_notification=True,
                 ),
             ]
@@ -114,7 +114,7 @@ class TestAutomowerSession:
 
         # WHEN
         #   Next start is 26 minutes before end of session
-        hass_driver.set_state("sensor.nono_next_start", "2023-08-03T18:34:00+00:00")
+        hass_driver.set_state("sensor.nono_next_start", "2023-08-03T16:34:00+00:00")
 
         # THEN
         #   Stay parked for 3 hours (180min)
@@ -122,9 +122,9 @@ class TestAutomowerSession:
             [
                 mock.call("Next start event triggered"),
                 mock.call("\told=2023-08-03T18:30:00+00:00"),
-                mock.call("\tnew=2023-08-03T18:34:00+00:00"),
-                mock.call("\tMowing session will end at 2023-08-03 19:00:00+00:00"),
-                mock.call("\tNext start is planned at 2023-08-03 18:34:00+00:00"),
+                mock.call("\tnew=2023-08-03T16:34:00+00:00"),
+                mock.call("\tMowing session will end at 2023-08-03 19:00:00 => 2023-08-03 17:00:00+00:00 UTC"),
+                mock.call("\tNext start is planned at 2023-08-03 18:34:00+02:00 => 2023-08-03 16:34:00+00:00 UTC"),
                 mock.call("\tThe number of hour before mowing session end is 0.43333333333333335"),
                 mock.call("\tEnd session is in less than 1 hour, stay parked."),
                 mock.call("Call service"),
@@ -168,7 +168,7 @@ class TestAutomowerSession:
 
         # WHEN
         #   Next start is 1h26min before end of session
-        hass_driver.set_state("sensor.nono_next_start", "2023-08-03T15:34:00+00:00")
+        hass_driver.set_state("sensor.nono_next_start", "2023-08-03T13:34:00+00:00")
 
         # THEN
         #   Let mowing session continue
@@ -176,15 +176,16 @@ class TestAutomowerSession:
             [
                 mock.call("Next start event triggered"),
                 mock.call("\told=2023-08-03T15:30:00+00:00"),
-                mock.call("\tnew=2023-08-03T15:34:00+00:00"),
-                mock.call("\tMowing session will end at 2023-08-03 19:00:00+00:00"),
-                mock.call("\tNext start is planned at 2023-08-03 15:34:00+00:00"),
+                mock.call("\tnew=2023-08-03T13:34:00+00:00"),
+                mock.call("\tMowing session will end at 2023-08-03 19:00:00 => 2023-08-03 17:00:00+00:00 UTC"),
+                mock.call("\tNext start is planned at 2023-08-03 15:34:00+02:00 => 2023-08-03 13:34:00+00:00 UTC"),
                 mock.call("\tThe number of hour before mowing session end is 3.433333333333333"),
                 mock.call(
-                    "\tDuration between next start (2023-08-03 15:34:00) and end of session is greater than 1 hour."
+                    "\tDuration between next start (2023-08-03 15:34:00+02:00) "
+                    "and end of session is greater than 1 hour."
                 ),
                 mock.call("Send notification"),
-                mock.call("\tMessage: Next start planned at 2023-08-03 15:34:00"),
+                mock.call("\tMessage: Next start planned at 2023-08-03 15:34:00+02:00"),
             ]
         )
 
@@ -193,7 +194,7 @@ class TestAutomowerSession:
                 mock.call(
                     service="telegram_bot/send_message",
                     title="🏡 Nono",
-                    message="Next start planned at 2023-08-03 15:34:00",
+                    message="Next start planned at 2023-08-03 15:34:00+02:00",
                     disable_notification=True,
                 )
             ]

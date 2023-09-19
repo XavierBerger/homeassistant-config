@@ -1,7 +1,6 @@
-anybadge==1.14.0
-appdaemon==4.4.2
-coverage==7.2.7
-esphome==2023.8.0
-pylint==2.17.5
-pytest-random-order==1.1.0
-pytest-watch==4.2.0
+appdaemon
+coverage
+esphome
+pylint
+pytest-random-order
+pytest-watch
